@@ -98,7 +98,6 @@ schwab_optionChain = function(ticker, strikes, inclQuote = TRUE,
                            '&includeUnderlyingQuote=',inclQuote,
                            '&fromDate=',startDate,
                            '&toDate=',endDate)
-  print(optionURL)
   options =  httr::GET(optionURL,schwab_headers(accessToken))
   # Confirm status code of 200
   schwab_status(options)
@@ -110,15 +109,15 @@ schwab_optionChain = function(ticker, strikes, inclQuote = TRUE,
   # Extract underlying data
   underlying = data.frame(jsonOptions$underlying) %>%
     dplyr::as_tibble()
-  # Extract PUT data
-  if(toupper(contractType) %in% c('PUT','ALL')){
+  # Extract PUT data, though only if the expiry date map object is has data
+  if((toupper(contractType) %in% c('PUT','ALL')) && (length(jsonOptions$putExpDateMap) > 0)){
     puts =  dplyr::bind_rows(lapply(jsonOptions$putExpDateMap,dplyr::bind_rows)) %>%
       dplyr::mutate(expireDate = Sys.Date() + lubridate::days(daysToExpiration))
   } else {
     puts = NULL
   }
-  # Extract CALL data
-  if(toupper(contractType) %in% c('CALL','ALL')){
+  # Extract CALL data, though only if the expiry date map object has data
+  if((toupper(contractType) %in% c('CALL','ALL')) && (length(jsonOptions$callExpDateMap) > 0)){
     calls = dplyr::bind_rows(lapply(jsonOptions$callExpDateMap,dplyr::bind_rows)) %>%
       dplyr::mutate(expireDate = Sys.Date() + lubridate::days(daysToExpiration))
   } else {
